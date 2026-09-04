@@ -6,19 +6,22 @@ Pon texto personalizado en el cartel del Coyote. Cada animación es un clip cort
 
 1. Entra a la URL de tu deploy en Vercel
 2. Elige **Animación 1–4**, escribe tu texto y reproduce
-3. Descarga en **MP4** o **GIF**
+3. Descarga en **MP4** o **GIF** (se genera en tu navegador, sin servidor)
 
 ### Desplegar en Vercel
 
-1. Sube el repo a GitHub (ya está en [Coyote-el-mas-67](https://github.com/Leonardo902-alan/Coyote-el-mas-67))
-2. Entra a [vercel.com](https://vercel.com) → **Add New Project**
-3. Importa el repositorio
-4. Vercel detecta la config automáticamente — pulsa **Deploy**
-5. Comparte la URL pública (ej. `https://tu-proyecto.vercel.app`)
+1. Entra a [vercel.com/dashboard](https://vercel.com/dashboard)
+2. **Si ya existe el proyecto** (error *"Project already exists"*):
+   - Abre el proyecto **`coyote-el-mas-67`** que ya creaste
+   - Ve a **Deployments** → **Redeploy** (o espera el deploy automático al hacer push)
+   - **No** vuelvas a pulsar "Add New Project" con el mismo repo
+3. **Si es la primera vez**:
+   - **Add New Project** → importa [Coyote-el-mas-67](https://github.com/Leonardo902-alan/Coyote-el-mas-67)
+   - En **Project Name** puedes usar `coyote-cartel` si el nombre automático ya existe
+   - Pulsa **Deploy**
+4. Comparte la URL pública (ej. `https://coyote-cartel.vercel.app`)
 
-La carpeta `public/` sirve la app y los videos. La exportación MP4/GIF corre en una función serverless (`api/export/`).
-
-> **Nota:** La exportación puede tardar unos segundos. En el plan gratuito de Vercel el límite es ~10 s por función; si falla al exportar, prueba de nuevo o usa el plan Pro (hasta 60 s).
+Solo se despliega la carpeta `public/` (sitio estático). La exportación corre en el navegador del usuario.
 
 ## Uso local
 

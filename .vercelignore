@@ -5,3 +5,10 @@ __pycache__/
 venv/
 .git/
 app/
+video/
+data/
+api/
+scripts/
+requirements.txt
+server.py
+iniciar.bat

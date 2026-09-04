@@ -15,11 +15,13 @@ const animStatus = document.getElementById("animStatus");
 
 const VIDEO_W = 1280;
 const VIDEO_H = 720;
+const IS_VERCEL = location.hostname.includes("vercel.app");
 
 let animations = [];
 let currentAnim = null;
 let videoReady = false;
 let bangersLoaded = false;
+let ffmpegInstance = null;
 
 async function loadBangersFont() {
   try {
@@ -72,13 +74,17 @@ function getFps() {
   return currentAnim?.fps || 24;
 }
 
-function shouldShowText() {
-  if (!currentAnim || !videoReady) return false;
+function shouldShowTextAtTime(time) {
+  if (!currentAnim) return false;
   const text = signTextInput.value.trim();
   if (!text) return false;
-
   const startTime = currentAnim.textStartTime ?? currentAnim.textStartFrame / getFps();
-  return video.currentTime >= startTime - 0.04;
+  return time >= startTime - 0.04;
+}
+
+function shouldShowText() {
+  if (!videoReady) return false;
+  return shouldShowTextAtTime(video.currentTime);
 }
 
 function getScale() {
@@ -101,7 +107,7 @@ function getScale() {
   return { drawW, drawH, offX, offY, scale: drawW / VIDEO_W };
 }
 
-function wrapLines(ctx, text, maxWidth) {
+function wrapLines(targetCtx, text, maxWidth) {
   const words = text.split(/\s+/).filter(Boolean);
   if (!words.length) return [text];
 
@@ -110,15 +116,15 @@ function wrapLines(ctx, text, maxWidth) {
 
   for (const word of words) {
     const test = current ? `${current} ${word}` : word;
-    if (ctx.measureText(test).width <= maxWidth) {
+    if (targetCtx.measureText(test).width <= maxWidth) {
       current = test;
     } else {
       if (current) lines.push(current);
-      if (ctx.measureText(word).width > maxWidth) {
+      if (targetCtx.measureText(word).width > maxWidth) {
         let chunk = "";
         for (const char of word) {
           const testChunk = chunk + char;
-          if (ctx.measureText(testChunk).width <= maxWidth) chunk = testChunk;
+          if (targetCtx.measureText(testChunk).width <= maxWidth) chunk = testChunk;
           else {
             if (chunk) lines.push(chunk);
             chunk = char;
@@ -134,54 +140,64 @@ function wrapLines(ctx, text, maxWidth) {
   return lines.length ? lines : [text];
 }
 
-function drawSignText() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (!shouldShowText()) return;
+function paintSignText(targetCtx, { scale, offsetX, offsetY, showText }) {
+  if (!showText || !currentAnim) return;
 
   const text = signTextInput.value.trim();
-  const box = currentAnim.textBox;
-  const { offX, offY, scale } = getScale();
+  if (!text) return;
 
-  const x = offX + box.x * scale;
-  const y = offY + box.y * scale;
+  const box = currentAnim.textBox;
+  const x = offsetX + box.x * scale;
+  const y = offsetY + box.y * scale;
   const w = box.w * scale;
   const h = box.h * scale;
-  const cx = offX + box.centerX * scale;
-  const cy = offY + box.centerY * scale;
+  const cx = offsetX + box.centerX * scale;
+  const cy = offsetY + box.centerY * scale;
 
   let fontSize = Math.max(14, parseInt(fontSizeInput.value, 10) * scale);
   const fontFamily = bangersLoaded ? "Bangers" : "cursive";
 
   let lines, lineHeight, totalH, widest;
   do {
-    ctx.font = `${fontSize}px "${fontFamily}", cursive`;
-    lines = wrapLines(ctx, text, w * 0.92);
+    targetCtx.font = `${fontSize}px "${fontFamily}", cursive`;
+    lines = wrapLines(targetCtx, text, w * 0.92);
     lineHeight = fontSize * 1.12;
     totalH = lines.length * lineHeight;
-    widest = Math.max(...lines.map((l) => ctx.measureText(l).width));
+    widest = Math.max(...lines.map((l) => targetCtx.measureText(l).width));
     if (widest <= w * 0.92 && totalH <= h * 0.88) break;
     fontSize -= 1;
   } while (fontSize >= 12);
 
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(x, y, w, h);
-  ctx.clip();
-  ctx.font = `${fontSize}px "${fontFamily}", cursive`;
-  ctx.fillStyle = textColorSelect.value;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.strokeStyle = "rgba(0,0,0,0.12)";
-  ctx.lineWidth = Math.max(1, fontSize * 0.04);
-  ctx.lineJoin = "round";
+  targetCtx.save();
+  targetCtx.beginPath();
+  targetCtx.rect(x, y, w, h);
+  targetCtx.clip();
+  targetCtx.font = `${fontSize}px "${fontFamily}", cursive`;
+  targetCtx.fillStyle = textColorSelect.value;
+  targetCtx.textAlign = "center";
+  targetCtx.textBaseline = "middle";
+  targetCtx.strokeStyle = "rgba(0,0,0,0.12)";
+  targetCtx.lineWidth = Math.max(1, fontSize * 0.04);
+  targetCtx.lineJoin = "round";
 
   let startY = cy - totalH / 2 + lineHeight / 2;
   for (const line of lines) {
-    ctx.strokeText(line, cx, startY);
-    ctx.fillText(line, cx, startY);
+    targetCtx.strokeText(line, cx, startY);
+    targetCtx.fillText(line, cx, startY);
     startY += lineHeight;
   }
-  ctx.restore();
+  targetCtx.restore();
+}
+
+function drawSignText() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const { offX, offY, scale } = getScale();
+  paintSignText(ctx, {
+    scale,
+    offsetX: offX,
+    offsetY: offY,
+    showText: shouldShowText(),
+  });
 }
 
 function updateAnimStatus() {
@@ -226,7 +242,168 @@ function togglePlay() {
   }
 }
 
-async function exportClip(format) {
+function seekVideo(target, time) {
+  return new Promise((resolve) => {
+    if (Math.abs(target.currentTime - time) < 0.001) {
+      resolve();
+      return;
+    }
+    const onSeeked = () => {
+      target.removeEventListener("seeked", onSeeked);
+      resolve();
+    };
+    target.addEventListener("seeked", onSeeked);
+    target.currentTime = time;
+  });
+}
+
+async function getFfmpeg() {
+  if (ffmpegInstance) return ffmpegInstance;
+
+  const { FFmpeg } = await import("https://esm.sh/@ffmpeg/ffmpeg@0.12.10");
+  const { toBlobURL } = await import("https://esm.sh/@ffmpeg/util@0.12.1");
+
+  const ffmpeg = new FFmpeg();
+  const baseURL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.12.6/dist/umd";
+
+  ffmpeg.on("log", () => {});
+
+  await ffmpeg.load({
+    coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
+    wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
+  });
+
+  ffmpegInstance = ffmpeg;
+  return ffmpeg;
+}
+
+async function renderExportFrames(onProgress) {
+  const fps = getFps();
+  const totalFrames = currentAnim.totalFrames;
+  const exportVideo = document.createElement("video");
+  exportVideo.src = video.src;
+  exportVideo.muted = true;
+  exportVideo.playsInline = true;
+  exportVideo.preload = "auto";
+
+  await new Promise((resolve, reject) => {
+    exportVideo.addEventListener("loadeddata", resolve, { once: true });
+    exportVideo.addEventListener("error", reject, { once: true });
+    exportVideo.load();
+  });
+
+  const offCanvas = document.createElement("canvas");
+  offCanvas.width = VIDEO_W;
+  offCanvas.height = VIDEO_H;
+  const offCtx = offCanvas.getContext("2d");
+  const blobs = [];
+
+  for (let i = 0; i < totalFrames; i++) {
+    await seekVideo(exportVideo, i / fps);
+    offCtx.drawImage(exportVideo, 0, 0, VIDEO_W, VIDEO_H);
+    paintSignText(offCtx, {
+      scale: 1,
+      offsetX: 0,
+      offsetY: 0,
+      showText: i >= currentAnim.textStartFrame,
+    });
+
+    const blob = await new Promise((resolve) => offCanvas.toBlob(resolve, "image/jpeg", 0.9));
+    blobs.push(blob);
+    onProgress(Math.round(((i + 1) / totalFrames) * 70));
+  }
+
+  exportVideo.src = "";
+  return { blobs, fps };
+}
+
+async function encodeWithFfmpeg(blobs, fps, format, onProgress) {
+  const { fetchFile } = await import("https://esm.sh/@ffmpeg/util@0.12.1");
+  const ffmpeg = await getFfmpeg();
+
+  for (let i = 0; i < blobs.length; i++) {
+    const name = `frame${String(i).padStart(4, "0")}.jpg`;
+    await ffmpeg.writeFile(name, await fetchFile(blobs[i]));
+  }
+
+  onProgress(85);
+
+  if (format === "mp4") {
+    await ffmpeg.exec([
+      "-framerate", String(fps),
+      "-i", "frame%04d.jpg",
+      "-c:v", "libx264",
+      "-pix_fmt", "yuv420p",
+      "-profile:v", "baseline",
+      "-movflags", "+faststart",
+      "-an",
+      "out.mp4",
+    ]);
+    onProgress(95);
+    const data = await ffmpeg.readFile("out.mp4");
+    return new Blob([data.buffer], { type: "video/mp4" });
+  }
+
+  await ffmpeg.exec([
+    "-framerate", String(fps),
+    "-i", "frame%04d.jpg",
+    "-vf", "scale=640:360",
+    "-y",
+    "out.gif",
+  ]);
+  onProgress(95);
+  const data = await ffmpeg.readFile("out.gif");
+  return new Blob([data.buffer], { type: "image/gif" });
+}
+
+async function exportClipClient(format) {
+  const text = signTextInput.value.trim();
+  if (!text) {
+    exportStatus.textContent = "Escribe un texto primero.";
+    exportStatus.className = "export-status error";
+    return;
+  }
+  if (!currentAnim) return;
+
+  exportMp4Btn.disabled = true;
+  exportGifBtn.disabled = true;
+  exportStatus.textContent = "Preparando exportación...";
+  exportStatus.className = "export-status";
+
+  const setProgress = (pct) => {
+    exportStatus.textContent =
+      format === "gif"
+        ? `Generando GIF... ${pct}%`
+        : `Generando MP4 (WhatsApp)... ${pct}%`;
+  };
+
+  try {
+    setProgress(5);
+    const { blobs, fps } = await renderExportFrames(setProgress);
+    setProgress(75);
+    exportStatus.textContent = "Codificando video...";
+    const blob = await encodeWithFfmpeg(blobs, fps, format, setProgress);
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `coyote${currentAnim.id}_${text.replace(/\s+/g, "_").slice(0, 15)}.${format}`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    exportStatus.textContent =
+      format === "mp4" ? "¡MP4 listo para WhatsApp!" : "¡GIF descargado!";
+    exportStatus.className = "export-status success";
+  } catch (err) {
+    exportStatus.textContent = err.message || "Error al exportar. Intenta de nuevo.";
+    exportStatus.className = "export-status error";
+  } finally {
+    exportMp4Btn.disabled = false;
+    exportGifBtn.disabled = false;
+  }
+}
+
+async function exportClipServer(format) {
   const text = signTextInput.value.trim();
   if (!text) {
     exportStatus.textContent = "Escribe un texto primero.";
@@ -275,13 +452,19 @@ async function exportClip(format) {
   }
 }
 
+function exportClip(format) {
+  if (IS_VERCEL || location.protocol === "file:") {
+    return exportClipClient(format);
+  }
+  return exportClipServer(format);
+}
+
 video.addEventListener("loadeddata", () => {
   videoReady = true;
   drawSignText();
 });
 
 video.addEventListener("timeupdate", drawSignText);
-
 video.addEventListener("seeked", drawSignText);
 
 video.addEventListener("ended", () => {
