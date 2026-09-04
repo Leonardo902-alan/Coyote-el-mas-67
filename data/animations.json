@@ -1,0 +1,98 @@
+[
+  {
+    "id": 1,
+    "file": "coyote1.mp4",
+    "label": "Animación 1",
+    "totalFrames": 48,
+    "fps": 24.0,
+    "textStartFrame": 22,
+    "textStartTime": 0.917,
+    "textBox": {
+      "x": 464,
+      "y": 413,
+      "w": 352,
+      "h": 108,
+      "centerX": 640,
+      "centerY": 467
+    },
+    "signBox": {
+      "x": 395,
+      "y": 295,
+      "w": 490,
+      "h": 200
+    },
+    "confidence": 1.0
+  },
+  {
+    "id": 2,
+    "file": "coyote2.mp4",
+    "label": "Animación 2",
+    "totalFrames": 77,
+    "fps": 24.0,
+    "textStartFrame": 34,
+    "textStartTime": 1.417,
+    "textBox": {
+      "x": 464,
+      "y": 415,
+      "w": 352,
+      "h": 108,
+      "centerX": 640,
+      "centerY": 469
+    },
+    "signBox": {
+      "x": 395,
+      "y": 297,
+      "w": 490,
+      "h": 200
+    },
+    "confidence": 0.929
+  },
+  {
+    "id": 3,
+    "file": "coyote3.mp4",
+    "label": "Animación 3",
+    "totalFrames": 68,
+    "fps": 24.0,
+    "textStartFrame": 32,
+    "textStartTime": 1.333,
+    "textBox": {
+      "x": 464,
+      "y": 415,
+      "w": 352,
+      "h": 108,
+      "centerX": 640,
+      "centerY": 469
+    },
+    "signBox": {
+      "x": 395,
+      "y": 297,
+      "w": 490,
+      "h": 200
+    },
+    "confidence": 0.922
+  },
+  {
+    "id": 4,
+    "file": "coyote4.mp4",
+    "label": "Animación 4",
+    "totalFrames": 47,
+    "fps": 24.0,
+    "textStartFrame": 31,
+    "textStartTime": 1.292,
+    "textBox": {
+      "x": 464,
+      "y": 415,
+      "w": 352,
+      "h": 108,
+      "centerX": 640,
+      "centerY": 469
+    },
+    "signBox": {
+      "x": 395,
+      "y": 297,
+      "w": 490,
+      "h": 200
+    },
+    "confidence": 0.925
+  }
+]

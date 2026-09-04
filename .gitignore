@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Salidas generadas
+output/
+
+# Archivos de análisis/debug
+analysis/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Video original largo (usar coyote1-4.mp4)
+video/coyote.mp4

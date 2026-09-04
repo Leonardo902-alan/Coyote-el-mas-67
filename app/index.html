@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cartel del Coyote — Generador</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="badge">Generador profesional</div>
+      <h1>Cartel del Coyote</h1>
+      <p>Crea tu meme animado: el Coyote saca el cartel y tu mensaje aparece centrado cuando se queda quieto</p>
+    </header>
+
+    <main>
+      <section class="preview-section">
+        <h2 class="section-title">Vista previa</h2>
+        <div class="anim-tabs" id="animTabs"></div>
+        <p class="anim-status" id="animStatus"></p>
+
+        <div class="video-wrapper">
+          <video id="video" playsinline loop muted></video>
+          <canvas id="overlay"></canvas>
+        </div>
+
+        <div class="video-controls">
+          <button type="button" id="playBtn" class="btn btn-primary">▶ Reproducir</button>
+          <button type="button" id="restartBtn" class="btn">↺ Desde el inicio</button>
+          <span id="timeDisplay">0:00</span>
+        </div>
+      </section>
+
+      <section class="controls-section">
+        <h2 class="section-title">Personalizar cartel</h2>
+
+        <div class="control-group">
+          <label for="signText">Texto del cartel</label>
+          <input type="text" id="signText" placeholder="Ej: Aquí estuvo Salas" maxlength="40" autocomplete="off">
+          <small>Máx. 40 caracteres · Si no cabe en una línea, continúa abajo</small>
+        </div>
+
+        <div class="control-row">
+          <div class="control-group">
+            <label for="textColor">Color del texto</label>
+            <select id="textColor">
+              <option value="#1a1a1a" selected>Negro</option>
+              <option value="#d62828">Rojo clásico</option>
+              <option value="#003049">Azul oscuro</option>
+              <option value="#f77f00">Naranja</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label for="fontSize">Tamaño <span id="fontSizeVal">72</span></label>
+            <input type="range" id="fontSize" min="45" max="95" value="72">
+          </div>
+        </div>
+
+        <div class="export-block">
+          <h3>Exportar resultado</h3>
+          <button type="button" id="exportMp4Btn" class="btn btn-export">Descargar MP4</button>
+          <button type="button" id="exportGifBtn" class="btn btn-export btn-gif">Descargar GIF</button>
+          <p id="exportStatus" class="export-status"></p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
