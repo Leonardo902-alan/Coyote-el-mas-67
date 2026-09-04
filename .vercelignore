@@ -9,6 +9,6 @@ video/
 data/
 api/
 scripts/
-requirements.txt
+requirements-local.txt
 server.py
 iniciar.bat

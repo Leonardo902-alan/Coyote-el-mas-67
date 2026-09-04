@@ -21,11 +21,13 @@ Pon texto personalizado en el cartel del Coyote. Cada animación es un clip cort
    - Pulsa **Deploy**
 4. Comparte la URL pública (ej. `https://coyote-cartel.vercel.app`)
 
+> **Si sigue fallando el build:** en Vercel → **Settings** → **General** → **Framework Preset** → elige **Other** → guarda y haz **Redeploy**.
+
 Solo se despliega la carpeta `public/` (sitio estático). La exportación corre en el navegador del usuario.
 
 ## Uso local
 
-1. `pip install -r requirements.txt` (solo la primera vez)
+1. `pip install -r requirements-local.txt` (solo la primera vez)
 2. Doble clic en **`iniciar.bat`** o ejecuta `python server.py`
 3. Abre **http://127.0.0.1:5000**
 4. Elige animación, escribe tu texto y descarga MP4/GIF
