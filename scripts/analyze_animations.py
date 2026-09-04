@@ -7,8 +7,9 @@ import cv2
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
-SOURCE_DIR = ROOT / "video"
-OUT_PATH = ROOT / "data" / "animations.json"
+PUBLIC = ROOT / "public"
+SOURCE_DIR = PUBLIC / "video"
+OUT_PATH = PUBLIC / "data" / "animations.json"
 
 MOTION_THRESHOLD = 1.2
 SIGN_CONFIDENCE = 0.42

@@ -6,6 +6,7 @@ from pathlib import Path
 from flask import Flask, jsonify, request, send_file, send_from_directory
 
 ROOT = Path(__file__).resolve().parent
+PUBLIC = ROOT / "public"
 sys.path.insert(0, str(ROOT))
 
 from scripts.export_video import export_gif, export_mp4  # noqa: E402
@@ -15,32 +16,32 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-    return send_from_directory(ROOT / "app", "index.html")
+    return send_from_directory(PUBLIC, "index.html")
 
 
 @app.route("/style.css")
 def style_css():
-    return send_from_directory(ROOT / "app", "style.css")
+    return send_from_directory(PUBLIC, "style.css")
 
 
 @app.route("/app.js")
 def app_js():
-    return send_from_directory(ROOT / "app", "app.js")
+    return send_from_directory(PUBLIC, "app.js")
 
 
 @app.route("/fonts/<path:filename>")
 def font_files(filename):
-    return send_from_directory(ROOT / "app" / "fonts", filename)
+    return send_from_directory(PUBLIC / "fonts", filename)
 
 
 @app.route("/video/<path:filename>")
 def video_files(filename):
-    return send_from_directory(ROOT / "video", filename)
+    return send_from_directory(PUBLIC / "video", filename)
 
 
 @app.route("/data/<path:filename>")
 def data_files(filename):
-    return send_from_directory(ROOT / "data", filename)
+    return send_from_directory(PUBLIC / "data", filename)
 
 
 @app.route("/api/export/<fmt>", methods=["POST"])
@@ -70,7 +71,7 @@ def api_export(fmt):
 if __name__ == "__main__":
     from scripts.calibrate_all import main as calibrate  # noqa: E402
 
-    if not (ROOT / "data" / "animations.json").exists():
+    if not (PUBLIC / "data" / "animations.json").exists():
         calibrate()
 
     print("\n  Cartel del Coyote")

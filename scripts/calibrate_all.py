@@ -7,8 +7,9 @@ import cv2
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
-VIDEO_DIR = ROOT / "video"
-OUT_PATH = ROOT / "data" / "animations.json"
+PUBLIC = ROOT / "public"
+VIDEO_DIR = PUBLIC / "video"
+OUT_PATH = PUBLIC / "data" / "animations.json"
 DEBUG_DIR = ROOT / "analysis" / "calibration"
 
 TEXT_START = {1: 22, 2: 34, 3: 32, 4: 31}

@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-OUT_PATH = Path(__file__).resolve().parent.parent / "data" / "sign_positions.json"
+OUT_PATH = Path(__file__).resolve().parent.parent / "public" / "data" / "sign_positions.json"
 
 # Keyframes: (frame, visible, sign_x, sign_y, sign_w, sign_h)
 # Basado en análisis visual del video (10s, 240 frames, 24fps)

@@ -1,0 +1,9 @@
+{
+  "functions": {
+    "api/export/[fmt].py": {
+      "maxDuration": 60,
+      "memory": 3008,
+      "includeFiles": "public/**,scripts/**"
+    }
+  }
+}

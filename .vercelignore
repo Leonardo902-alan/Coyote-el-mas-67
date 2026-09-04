@@ -1,0 +1,7 @@
+output/
+analysis/
+__pycache__/
+.venv/
+venv/
+.git/
+app/

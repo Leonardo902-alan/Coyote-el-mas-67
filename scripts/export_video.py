@@ -1,6 +1,7 @@
 """Exporta clips del coyote con texto multilínea en el cartel."""
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -17,10 +18,11 @@ sys.path.insert(0, str(ROOT))
 
 from scripts.text_layout import wrap_words  # noqa: E402
 
-VIDEO_DIR = ROOT / "video"
-DATA_PATH = ROOT / "data" / "animations.json"
-OUTPUT_DIR = ROOT / "output"
-FONT_PATH = ROOT / "app" / "fonts" / "Bangers-Regular.ttf"
+PUBLIC_DIR = ROOT / "public"
+VIDEO_DIR = PUBLIC_DIR / "video"
+DATA_PATH = PUBLIC_DIR / "data" / "animations.json"
+OUTPUT_DIR = Path("/tmp") if os.environ.get("VERCEL") else ROOT / "output"
+FONT_PATH = PUBLIC_DIR / "fonts" / "Bangers-Regular.ttf"
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
 
 

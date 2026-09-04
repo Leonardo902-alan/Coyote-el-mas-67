@@ -19,5 +19,10 @@ analysis/
 .DS_Store
 Thumbs.db
 
+# Carpetas antiguas (contenido migrado a public/)
+/video/
+/app/
+/data/
+
 # Video original largo (usar coyote1-4.mp4)
-video/coyote.mp4
+public/video/coyote.mp4
