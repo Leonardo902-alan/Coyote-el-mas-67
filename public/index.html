@@ -74,7 +74,11 @@
           </select>
           <label for="customVoiceId">Otra voz (ID opcional)</label>
           <input type="text" id="customVoiceId" placeholder="Solo si quieres cambiar la voz" autocomplete="off">
-          <small>La voz del narrador suena al aparecer el cartel y se incluye en el MP4.</small>
+          <small>
+            Necesitas <strong>2 cosas</strong> en Fish: API Key (fish.audio/app/api-keys) + ID del modelo.
+            La voz suena al aparecer el cartel y en el MP4.
+          </small>
+          <button type="button" id="testVoiceBtn" class="btn btn-voice-test">Probar voz Fish</button>
         </div>
 
         <div class="export-block">
@@ -87,6 +91,6 @@
     </main>
   </div>
 
-  <script type="module" src="app.js?v=6"></script>
+  <script type="module" src="app.js?v=7"></script>
 </body>
 </html>

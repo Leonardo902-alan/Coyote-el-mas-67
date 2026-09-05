@@ -34,9 +34,15 @@ _load_env_file()
 
 
 def _fish_tts(text: str, reference_id: str = "") -> bytes:
-    api_key = os.environ.get("FISH_AUDIO_API_KEY", "")
+    api_key = os.environ.get("FISH_AUDIO_API_KEY") or os.environ.get("FISH_API_KEY") or ""
     if not api_key:
-        raise RuntimeError("Falta FISH_AUDIO_API_KEY en .env")
+        raise RuntimeError(
+            "Falta FISH_AUDIO_API_KEY en .env. Créala en fish.audio/app/api-keys "
+            "(no uses el ID del modelo)."
+        )
+
+    if not reference_id:
+        reference_id = os.environ.get("FISH_AUDIO_VOICE_ID", "")
 
     body = {
         "text": text,
@@ -67,7 +73,13 @@ def _fish_tts(text: str, reference_id: str = "") -> bytes:
             with urllib.request.urlopen(req, timeout=60) as resp:
                 return resp.read()
         except urllib.error.HTTPError as exc:
-            last_error = exc.read().decode("utf-8", errors="replace")[:200]
+            body = exc.read().decode("utf-8", errors="replace")
+            if exc.code == 401:
+                last_error = "API Key inválida. Usa una de fish.audio/app/api-keys."
+            elif exc.code == 402:
+                last_error = "Sin créditos en Fish Audio."
+            else:
+                last_error = body[:200] or f"Fish Audio error {exc.code}"
             if exc.code in (401, 402):
                 break
     raise RuntimeError(last_error)
@@ -76,7 +88,7 @@ def _fish_tts(text: str, reference_id: str = "") -> bytes:
 @app.route("/api/tts")
 def api_tts():
     text = (request.args.get("text") or "").strip()[:200]
-    voice = (request.args.get("voice") or "").strip()
+    voice = (request.args.get("voice") or os.environ.get("FISH_AUDIO_VOICE_ID", "")).strip()
     if not text:
         return jsonify({"error": "Falta el texto"}), 400
 
@@ -152,10 +164,11 @@ if __name__ == "__main__":
         calibrate()
 
     print("\n  Cartel del Coyote")
-    if os.environ.get("FISH_AUDIO_API_KEY"):
+    if os.environ.get("FISH_AUDIO_API_KEY") or os.environ.get("FISH_API_KEY"):
         model = os.environ.get("FISH_AUDIO_MODEL", "s2-pro")
-        print(f"  Voz IA: Fish Audio ({model})")
+        voice = os.environ.get("FISH_AUDIO_VOICE_ID", "sin voz")
+        print(f"  Voz IA: Fish Audio ({model}) · voz {voice[:8]}...")
     else:
-        print("  Voz IA: sin token (crea .env con FISH_AUDIO_API_KEY)")
+        print("  Voz IA: FALTA API Key en .env (fish.audio/app/api-keys)")
     print("  Abre: http://127.0.0.1:5000\n")
     app.run(host="127.0.0.1", port=5000, debug=False)

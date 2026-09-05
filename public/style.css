@@ -271,6 +271,12 @@ main {
   margin-top: 0.35rem;
 }
 
+.btn-voice-test {
+  background: #0ea5e9;
+  color: #fff;
+  margin-top: 0.35rem;
+}
+
 .btn {
   padding: 0.6rem 1rem;
   border: none;

@@ -1,10 +1,32 @@
 const googleTTS = require("google-tts-api");
 
+function getApiKey() {
+  return process.env.FISH_AUDIO_API_KEY || process.env.FISH_API_KEY || "";
+}
+
+function getDefaultVoiceId() {
+  return process.env.FISH_AUDIO_VOICE_ID || "";
+}
+
 function getFishModels() {
   const preferred = process.env.FISH_AUDIO_MODEL || "s2-pro";
   const models = [preferred];
   if (preferred !== "s2.1-pro-free") models.push("s2.1-pro-free");
   return models;
+}
+
+function parseFishError(status, body) {
+  try {
+    const data = JSON.parse(body);
+    if (status === 401) {
+      return "API Key inválida. Crea una en fish.audio/app/api-keys (no uses el ID del modelo).";
+    }
+    if (status === 402) return "Sin créditos en Fish Audio. Recarga en fish.audio.";
+    if (status === 400) return data.message || "ID de voz inválido en Fish Audio.";
+    return data.message || `Fish Audio error ${status}`;
+  } catch {
+    return body.slice(0, 200) || `Fish Audio error ${status}`;
+  }
 }
 
 async function fishTts(text, referenceId, apiKey) {
@@ -33,7 +55,7 @@ async function fishTts(text, referenceId, apiKey) {
     }
 
     const errText = await response.text();
-    lastError = errText.slice(0, 200) || `Fish Audio error ${response.status}`;
+    lastError = parseFishError(response.status, errText);
     if (response.status === 401 || response.status === 402) break;
   }
 
@@ -56,23 +78,24 @@ module.exports = async (req, res) => {
   }
 
   const text = (req.query.text || "").trim().slice(0, 200);
-  const referenceId = (req.query.voice || "").trim();
+  const referenceId = (req.query.voice || getDefaultVoiceId()).trim();
 
   if (!text) {
     res.status(400).json({ error: "Falta el texto" });
     return;
   }
 
-  try {
-    const apiKey = process.env.FISH_AUDIO_API_KEY;
-    let buffer;
+  const apiKey = getApiKey();
 
-    if (apiKey) {
-      buffer = await fishTts(text, referenceId, apiKey);
-    } else {
-      buffer = await googleTtsFallback(text);
+  try {
+    if (!apiKey) {
+      res.status(503).json({
+        error: "Falta FISH_AUDIO_API_KEY en Vercel. Obtén una en fish.audio/app/api-keys",
+      });
+      return;
     }
 
+    const buffer = await fishTts(text, referenceId, apiKey);
     res.setHeader("Content-Type", "audio/mpeg");
     res.setHeader("Cache-Control", "public, max-age=3600");
     res.send(buffer);

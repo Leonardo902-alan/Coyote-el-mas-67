@@ -153,23 +153,45 @@ async function fetchVoiceAudio(text) {
 async function speakPreview(text) {
   if (!voiceEnabledInput?.checked || !text) return;
 
-  try {
-    if (previewAudio) {
-      previewAudio.pause();
-      previewAudio = null;
-    }
-    window.speechSynthesis?.cancel();
+  if (previewAudio) {
+    previewAudio.pause();
+    previewAudio = null;
+  }
+  window.speechSynthesis?.cancel();
 
+  try {
     const blob = await fetchVoiceAudio(text);
     const url = URL.createObjectURL(blob);
     previewAudio = new Audio(url);
     previewAudio.onended = () => URL.revokeObjectURL(url);
     await previewAudio.play();
-  } catch {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "es-ES";
-    utterance.rate = 0.95;
-    window.speechSynthesis?.speak(utterance);
+    if (animStatus) {
+      animStatus.textContent = "Voz Fish Audio OK";
+      animStatus.className = "export-status success";
+    }
+  } catch (err) {
+    if (animStatus) {
+      animStatus.textContent = err.message;
+      animStatus.className = "export-status error";
+    }
+  }
+}
+
+async function testFishVoice() {
+  const text = signTextInput.value.trim() || "Eso es todo amigos";
+  exportStatus.textContent = "Probando voz Fish Audio...";
+  exportStatus.className = "export-status";
+  try {
+    const blob = await fetchVoiceAudio(text);
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.onended = () => URL.revokeObjectURL(url);
+    await audio.play();
+    exportStatus.textContent = "Voz Fish Audio funcionando.";
+    exportStatus.className = "export-status success";
+  } catch (err) {
+    exportStatus.textContent = err.message;
+    exportStatus.className = "export-status error";
   }
 }
 
@@ -633,6 +655,7 @@ restartBtn.addEventListener("click", () => {
 });
 exportMp4Btn.addEventListener("click", () => exportClip("mp4"));
 exportGifBtn.addEventListener("click", () => exportClip("gif"));
+document.getElementById("testVoiceBtn")?.addEventListener("click", testFishVoice);
 signTextInput.addEventListener("input", drawSignText);
 textColorSelect.addEventListener("change", drawSignText);
 fontSizeInput.addEventListener("input", () => {
