@@ -22,7 +22,7 @@ PUBLIC_DIR = ROOT / "public"
 VIDEO_DIR = PUBLIC_DIR / "video"
 DATA_PATH = PUBLIC_DIR / "data" / "animations.json"
 OUTPUT_DIR = Path("/tmp") if os.environ.get("VERCEL") else ROOT / "output"
-FONT_PATH = PUBLIC_DIR / "fonts" / "RobotoCondensed-BoldItalic.ttf"
+FONT_PATH = PUBLIC_DIR / "fonts" / "RobotoCondensed-MediumItalic.ttf"
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
 
 

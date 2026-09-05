@@ -12,10 +12,12 @@ const exportGifBtn = document.getElementById("exportGifBtn");
 const exportStatus = document.getElementById("exportStatus");
 const timeDisplay = document.getElementById("timeDisplay");
 const animStatus = document.getElementById("animStatus");
+const voiceEnabledInput = document.getElementById("voiceEnabled");
 
 const VIDEO_W = 1280;
 const VIDEO_H = 720;
 const IS_VERCEL = location.hostname.includes("vercel.app");
+const ASSET_BASE = new URL("./", import.meta.url).href;
 const SIGN_FONT = '"Roboto Condensed", "Arial Narrow", sans-serif';
 
 const ANIMATIONS_FALLBACK = [
@@ -34,17 +36,22 @@ let currentAnim = null;
 let videoReady = false;
 let signFontLoaded = false;
 let ffmpegInstance = null;
+let spokeThisLoop = false;
+
+function asset(path) {
+  return new URL(path, ASSET_BASE).href;
+}
 
 function signFontCss(size) {
-  return `italic 700 ${size}px ${SIGN_FONT}`;
+  return `italic 500 ${size}px ${SIGN_FONT}`;
 }
 
 async function loadSignFont() {
   try {
     const font = new FontFace(
       "Roboto Condensed",
-      "url(fonts/RobotoCondensed-BoldItalic.ttf)",
-      { weight: "700", style: "italic" }
+      `url(${asset("fonts/RobotoCondensed-MediumItalic.ttf")})`,
+      { weight: "500", style: "italic" }
     );
     await font.load();
     document.fonts.add(font);
@@ -57,11 +64,12 @@ async function loadSignFont() {
       signFontLoaded = false;
     }
   }
+  await document.fonts.ready;
 }
 
 async function loadAnimations() {
   try {
-    const res = await fetch(`data/animations.json?t=${Date.now()}`);
+    const res = await fetch(asset("data/animations.json") + "?t=" + Date.now());
     if (res.ok) return res.json();
   } catch {}
   return ANIMATIONS_FALLBACK;
@@ -103,23 +111,55 @@ function selectAnim(id) {
 
   videoReady = false;
   video.pause();
-  video.src = `video/${currentAnim.file}?v=${Date.now()}`;
+  video.src = asset(`video/${currentAnim.file}`) + "?v=" + Date.now();
   video.load();
   playBtn.textContent = "▶ Reproducir";
   updateAnimStatus();
   drawSignText();
 }
 
+function getTextStartTime() {
+  return currentAnim.textStartTime ?? currentAnim.textStartFrame / getFps();
+}
+
+function speakPreview(text) {
+  if (!voiceEnabledInput?.checked || !text) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "es-ES";
+  utterance.rate = 0.95;
+  utterance.pitch = 1;
+  const voices = window.speechSynthesis.getVoices().filter((v) => v.lang.startsWith("es"));
+  if (voices.length) utterance.voice = voices[0];
+  window.speechSynthesis.speak(utterance);
+}
+
+async function fetchVoiceAudio(text) {
+  const res = await fetch(`/api/tts?text=${encodeURIComponent(text)}`);
+  if (!res.ok) throw new Error("No se pudo generar la voz");
+  return res.blob();
+}
+
 function getFps() {
   return currentAnim?.fps || 24;
+}
+
+function maybeSpeakOnTextShow() {
+  if (!videoReady || !voiceEnabledInput?.checked) return;
+  const text = signTextInput.value.trim();
+  if (!text || spokeThisLoop) return;
+
+  if (shouldShowText()) {
+    spokeThisLoop = true;
+    speakPreview(text);
+  }
 }
 
 function shouldShowTextAtTime(time) {
   if (!currentAnim) return false;
   const text = signTextInput.value.trim();
   if (!text) return false;
-  const startTime = currentAnim.textStartTime ?? currentAnim.textStartFrame / getFps();
-  return time >= startTime - 0.04;
+  return time >= getTextStartTime() - 0.04;
 }
 
 function shouldShowText() {
@@ -352,7 +392,7 @@ async function renderExportFrames(onProgress) {
   return { blobs, fps };
 }
 
-async function encodeWithFfmpeg(blobs, fps, format, onProgress) {
+async function encodeWithFfmpeg(blobs, fps, format, onProgress, voiceBlob = null) {
   const { fetchFile } = await import("https://esm.sh/@ffmpeg/util@0.12.1");
   const ffmpeg = await getFfmpeg();
 
@@ -364,16 +404,37 @@ async function encodeWithFfmpeg(blobs, fps, format, onProgress) {
   onProgress(85);
 
   if (format === "mp4") {
-    await ffmpeg.exec([
-      "-framerate", String(fps),
-      "-i", "frame%04d.jpg",
-      "-c:v", "libx264",
-      "-pix_fmt", "yuv420p",
-      "-profile:v", "baseline",
-      "-movflags", "+faststart",
-      "-an",
-      "out.mp4",
-    ]);
+    if (voiceBlob) {
+      const delayMs = Math.round(getTextStartTime() * 1000);
+      await ffmpeg.writeFile("voice.mp3", await fetchFile(voiceBlob));
+      await ffmpeg.exec([
+        "-framerate", String(fps),
+        "-i", "frame%04d.jpg",
+        "-i", "voice.mp3",
+        "-filter_complex", `[1:a]adelay=${delayMs}|${delayMs}[a]`,
+        "-map", "0:v",
+        "-map", "[a]",
+        "-c:v", "libx264",
+        "-c:a", "aac",
+        "-b:a", "128k",
+        "-pix_fmt", "yuv420p",
+        "-profile:v", "baseline",
+        "-movflags", "+faststart",
+        "-shortest",
+        "out.mp4",
+      ]);
+    } else {
+      await ffmpeg.exec([
+        "-framerate", String(fps),
+        "-i", "frame%04d.jpg",
+        "-c:v", "libx264",
+        "-pix_fmt", "yuv420p",
+        "-profile:v", "baseline",
+        "-movflags", "+faststart",
+        "-an",
+        "out.mp4",
+      ]);
+    }
     onProgress(95);
     const data = await ffmpeg.readFile("out.mp4");
     return new Blob([data.buffer], { type: "video/mp4" });
@@ -416,8 +477,15 @@ async function exportClipClient(format) {
     setProgress(5);
     const { blobs, fps } = await renderExportFrames(setProgress);
     setProgress(75);
+
+    let voiceBlob = null;
+    if (voiceEnabledInput?.checked && format === "mp4") {
+      exportStatus.textContent = "Generando voz en español...";
+      voiceBlob = await fetchVoiceAudio(text);
+    }
+
     exportStatus.textContent = "Codificando video...";
-    const blob = await encodeWithFfmpeg(blobs, fps, format, setProgress);
+    const blob = await encodeWithFfmpeg(blobs, fps, format, setProgress, voiceBlob);
 
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -506,7 +574,11 @@ video.addEventListener("error", () => {
   }
 });
 
-video.addEventListener("timeupdate", drawSignText);
+video.addEventListener("timeupdate", () => {
+  if (video.currentTime < 0.15) spokeThisLoop = false;
+  maybeSpeakOnTextShow();
+  drawSignText();
+});
 video.addEventListener("seeked", drawSignText);
 
 video.addEventListener("ended", () => {
@@ -516,6 +588,8 @@ video.addEventListener("ended", () => {
 playBtn.addEventListener("click", togglePlay);
 restartBtn.addEventListener("click", () => {
   if (!videoReady) return;
+  spokeThisLoop = false;
+  window.speechSynthesis.cancel();
   video.currentTime = 0;
   video.play();
   playBtn.textContent = "⏸ Pausar";

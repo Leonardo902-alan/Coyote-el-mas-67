@@ -6,8 +6,8 @@
   <title>Cartel del Coyote — Generador</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Roboto+Condensed:ital,wght@0,600;0,700;1,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Roboto+Condensed:ital,wght@0,500;0,600;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
   <div class="app">
@@ -60,6 +60,14 @@
           </div>
         </div>
 
+        <div class="control-group voice-group">
+          <label class="voice-toggle">
+            <input type="checkbox" id="voiceEnabled">
+            <span>Leer texto con voz (español)</span>
+          </label>
+          <small>La voz suena cuando aparece el cartel. En MP4 se incluye audio si está activado.</small>
+        </div>
+
         <div class="export-block">
           <h3>Exportar resultado</h3>
           <button type="button" id="exportMp4Btn" class="btn btn-export">Descargar MP4</button>
@@ -70,6 +78,6 @@
     </main>
   </div>
 
-  <script type="module" src="app.js"></script>
+  <script type="module" src="app.js?v=3"></script>
 </body>
 </html>

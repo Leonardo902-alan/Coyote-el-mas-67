@@ -39,7 +39,7 @@ header {
 header h1 {
   font-family: "Roboto Condensed", "Arial Narrow", sans-serif;
   font-size: 2.75rem;
-  font-weight: 700;
+  font-weight: 500;
   font-style: italic;
   letter-spacing: 1px;
   color: #fbbf24;
@@ -110,7 +110,8 @@ main {
 .tab-num {
   font-size: 1.1rem;
   font-family: "Roboto Condensed", sans-serif;
-  font-weight: 700;
+  font-weight: 500;
+  font-style: italic;
   color: #fbbf24;
 }
 
@@ -238,6 +239,29 @@ main {
   font-size: 0.85rem;
   color: #94a3b8;
   font-weight: 600;
+}
+
+.voice-group {
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.voice-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.voice-toggle input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #f59e0b;
 }
 
 .btn {

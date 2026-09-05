@@ -4,9 +4,9 @@ __pycache__/
 .venv/
 venv/
 .git/
-app/
-video/
-data/
+/app/
+/video/
+/data/
 api/
 scripts/
 requirements-local.txt
