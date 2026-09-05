@@ -63,9 +63,17 @@
         <div class="control-group voice-group">
           <label class="voice-toggle">
             <input type="checkbox" id="voiceEnabled">
-            <span>Leer texto con voz (español)</span>
+            <span>Voz IA (Fish Audio)</span>
           </label>
-          <small>La voz suena cuando aparece el cartel. En MP4 se incluye audio si está activado.</small>
+          <label for="voiceSelect">Estilo de voz</label>
+          <select id="voiceSelect">
+            <option value="">Voz Fish por defecto</option>
+            <option value="9a9cf47702da476aa4629e2506d4a857">Hombre energético</option>
+            <option value="ca3007f96ae7499ab87d27ea3599956a">Voz femenina</option>
+          </select>
+          <label for="customVoiceId">ID de voz personalizada (Fish Studio)</label>
+          <input type="text" id="customVoiceId" placeholder="Pega el ID de fish.audio" autocomplete="off">
+          <small>La voz suena al aparecer el cartel. En MP4 se incluye audio si está activado.</small>
         </div>
 
         <div class="export-block">
@@ -78,6 +86,6 @@
     </main>
   </div>
 
-  <script type="module" src="app.js?v=3"></script>
+  <script type="module" src="app.js?v=4"></script>
 </body>
 </html>

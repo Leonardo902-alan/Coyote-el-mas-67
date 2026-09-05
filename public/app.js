@@ -13,6 +13,10 @@ const exportStatus = document.getElementById("exportStatus");
 const timeDisplay = document.getElementById("timeDisplay");
 const animStatus = document.getElementById("animStatus");
 const voiceEnabledInput = document.getElementById("voiceEnabled");
+const voiceSelect = document.getElementById("voiceSelect");
+const customVoiceId = document.getElementById("customVoiceId");
+
+let previewAudio = null;
 
 const VIDEO_W = 1280;
 const VIDEO_H = 720;
@@ -122,22 +126,45 @@ function getTextStartTime() {
   return currentAnim.textStartTime ?? currentAnim.textStartFrame / getFps();
 }
 
-function speakPreview(text) {
-  if (!voiceEnabledInput?.checked || !text) return;
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "es-ES";
-  utterance.rate = 0.95;
-  utterance.pitch = 1;
-  const voices = window.speechSynthesis.getVoices().filter((v) => v.lang.startsWith("es"));
-  if (voices.length) utterance.voice = voices[0];
-  window.speechSynthesis.speak(utterance);
+function getSelectedVoiceId() {
+  const custom = customVoiceId?.value.trim();
+  if (custom) return custom;
+  return voiceSelect?.value.trim() || "";
 }
 
 async function fetchVoiceAudio(text) {
-  const res = await fetch(`/api/tts?text=${encodeURIComponent(text)}`);
-  if (!res.ok) throw new Error("No se pudo generar la voz");
+  const params = new URLSearchParams({ text });
+  const voiceId = getSelectedVoiceId();
+  if (voiceId) params.set("voice", voiceId);
+  const res = await fetch(`/api/tts?${params}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "No se pudo generar la voz");
+  }
   return res.blob();
+}
+
+async function speakPreview(text) {
+  if (!voiceEnabledInput?.checked || !text) return;
+
+  try {
+    if (previewAudio) {
+      previewAudio.pause();
+      previewAudio = null;
+    }
+    window.speechSynthesis?.cancel();
+
+    const blob = await fetchVoiceAudio(text);
+    const url = URL.createObjectURL(blob);
+    previewAudio = new Audio(url);
+    previewAudio.onended = () => URL.revokeObjectURL(url);
+    await previewAudio.play();
+  } catch {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "es-ES";
+    utterance.rate = 0.95;
+    window.speechSynthesis?.speak(utterance);
+  }
 }
 
 function getFps() {
@@ -589,7 +616,11 @@ playBtn.addEventListener("click", togglePlay);
 restartBtn.addEventListener("click", () => {
   if (!videoReady) return;
   spokeThisLoop = false;
-  window.speechSynthesis.cancel();
+  window.speechSynthesis?.cancel();
+  if (previewAudio) {
+    previewAudio.pause();
+    previewAudio = null;
+  }
   video.currentTime = 0;
   video.play();
   playBtn.textContent = "⏸ Pausar";

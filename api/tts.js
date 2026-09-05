@@ -1,5 +1,47 @@
 const googleTTS = require("google-tts-api");
 
+const FISH_MODELS = ["s2-pro", "s2.1-pro-free"];
+
+async function fishTts(text, referenceId, apiKey) {
+  const body = {
+    text,
+    format: "mp3",
+    prosody: { speed: 1, volume: 0, normalize_loudness: true },
+  };
+  if (referenceId) body.reference_id = referenceId;
+
+  let lastError = "Fish Audio no disponible";
+
+  for (const model of FISH_MODELS) {
+    const response = await fetch("https://api.fish.audio/v1/tts", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        model,
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (response.ok) {
+      return Buffer.from(await response.arrayBuffer());
+    }
+
+    const errText = await response.text();
+    lastError = errText.slice(0, 200) || `Fish Audio error ${response.status}`;
+    if (response.status === 401 || response.status === 402) break;
+  }
+
+  throw new Error(lastError);
+}
+
+async function googleTtsFallback(text) {
+  const url = googleTTS.getAudioUrl(text, { lang: "es", slow: false });
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("TTS de respaldo no disponible");
+  return Buffer.from(await response.arrayBuffer());
+}
+
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
 
@@ -9,17 +51,28 @@ module.exports = async (req, res) => {
   }
 
   const text = (req.query.text || "").trim().slice(0, 200);
+  const referenceId = (req.query.voice || "").trim();
+
   if (!text) {
     res.status(400).json({ error: "Falta el texto" });
     return;
   }
 
   try {
-    const url = googleTTS.getAudioUrl(text, { lang: "es", slow: false });
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("TTS no disponible");
+    const apiKey = process.env.FISH_AUDIO_API_KEY;
+    let buffer;
 
-    const buffer = Buffer.from(await response.arrayBuffer());
+    if (apiKey) {
+      try {
+        buffer = await fishTts(text, referenceId, apiKey);
+      } catch (fishErr) {
+        console.error("Fish Audio:", fishErr.message);
+        buffer = await googleTtsFallback(text);
+      }
+    } else {
+      buffer = await googleTtsFallback(text);
+    }
+
     res.setHeader("Content-Type", "audio/mpeg");
     res.setHeader("Cache-Control", "public, max-age=3600");
     res.send(buffer);

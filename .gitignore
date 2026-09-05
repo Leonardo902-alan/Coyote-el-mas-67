@@ -19,6 +19,10 @@ analysis/
 .DS_Store
 Thumbs.db
 
+# Secretos locales
+.env
+.env.local
+
 # Carpetas antiguas (contenido migrado a public/)
 /video/
 /app/

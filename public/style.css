@@ -264,6 +264,13 @@ main {
   accent-color: #f59e0b;
 }
 
+.voice-group label:not(.voice-toggle) {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  margin-top: 0.35rem;
+}
+
 .btn {
   padding: 0.6rem 1rem;
   border: none;

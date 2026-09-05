@@ -25,6 +25,19 @@ Pon texto personalizado en el cartel del Coyote. Cada animación es un clip cort
 
 Solo se despliega la carpeta `public/` (sitio estático). La exportación corre en el navegador del usuario.
 
+### Voz IA con Fish Audio (gratis con tu token)
+
+1. En Vercel → tu proyecto → **Settings** → **Environment Variables**
+2. Añade:
+   - **Name:** `FISH_AUDIO_API_KEY`
+   - **Value:** tu token de [fish.audio](https://fish.audio)
+3. Guarda y haz **Redeploy**
+4. En la app activa **Voz IA (Fish Audio)** y elige un estilo de voz
+
+Para una voz concreta de Fish Studio, copia su **ID** en fish.audio y pégalo en *ID de voz personalizada*.
+
+**Local:** copia `.env.example` a `.env` y pon tu token ahí (nunca lo subas a GitHub).
+
 ## Uso local
 
 1. `pip install -r requirements-local.txt` (solo la primera vez)
