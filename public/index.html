@@ -71,9 +71,12 @@
             <option value="9a9cf47702da476aa4629e2506d4a857">Hombre energético</option>
             <option value="ca3007f96ae7499ab87d27ea3599956a">Voz femenina</option>
           </select>
-          <label for="customVoiceId">ID de voz personalizada (Fish Studio)</label>
-          <input type="text" id="customVoiceId" placeholder="Pega el ID de fish.audio" autocomplete="off">
-          <small>La voz suena al aparecer el cartel. En MP4 se incluye audio si está activado.</small>
+          <label for="customVoiceId">Tu voz de Fish (ID del modelo)</label>
+          <input type="text" id="customVoiceId" placeholder="Ej: abc123def456..." autocomplete="off">
+          <small>
+            En fish.audio abre la voz → menú ⋮ → <strong>Copiar Id de modelo</strong> → pégalo aquí.
+            Si lo pegas en el chat, yo lo dejo fijo en la app.
+          </small>
         </div>
 
         <div class="export-block">
@@ -86,6 +89,6 @@
     </main>
   </div>
 
-  <script type="module" src="app.js?v=4"></script>
+  <script type="module" src="app.js?v=5"></script>
 </body>
 </html>

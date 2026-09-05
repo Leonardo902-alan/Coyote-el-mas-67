@@ -96,6 +96,9 @@ async function init() {
 
     selectAnim(1);
     requestAnimationFrame(renderLoop);
+
+    const savedVoice = localStorage.getItem("coyote_fish_voice_id");
+    if (savedVoice && customVoiceId) customVoiceId.value = savedVoice;
   } catch (err) {
     if (animStatus) {
       animStatus.textContent = "Error al cargar la app. Recarga la página.";
@@ -634,5 +637,11 @@ fontSizeInput.addEventListener("input", () => {
   drawSignText();
 });
 window.addEventListener("resize", drawSignText);
+
+customVoiceId?.addEventListener("input", () => {
+  const id = customVoiceId.value.trim();
+  if (id) localStorage.setItem("coyote_fish_voice_id", id);
+  else localStorage.removeItem("coyote_fish_voice_id");
+});
 
 init();
