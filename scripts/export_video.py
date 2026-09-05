@@ -22,7 +22,7 @@ PUBLIC_DIR = ROOT / "public"
 VIDEO_DIR = PUBLIC_DIR / "video"
 DATA_PATH = PUBLIC_DIR / "data" / "animations.json"
 OUTPUT_DIR = Path("/tmp") if os.environ.get("VERCEL") else ROOT / "output"
-FONT_PATH = PUBLIC_DIR / "fonts" / "Bangers-Regular.ttf"
+FONT_PATH = PUBLIC_DIR / "fonts" / "RobotoCondensed-BoldItalic.ttf"
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
 
 
@@ -37,7 +37,7 @@ def load_config(anim_id: int) -> dict:
 
 def load_font(size: int):
     if not FONT_PATH.exists():
-        raise FileNotFoundError(f"No se encontró la fuente Bangers en {FONT_PATH}")
+        raise FileNotFoundError(f"No se encontró la fuente en {FONT_PATH}")
     return ImageFont.truetype(str(FONT_PATH), size)
 
 
@@ -80,14 +80,15 @@ def draw_text_on_frame(frame, text: str, text_box: dict, color_rgb: tuple, base_
     line_height = font_size * 1.12
     total_h = len(lines) * line_height
     start_y = cy - total_h / 2 + line_height / 2
-    outline = max(1, font_size // 40)
+    outline = max(1, font_size // 80)
 
     for i, line in enumerate(lines):
         ly = start_y + i * line_height
-        for ox in range(-outline, outline + 1):
-            for oy in range(-outline, outline + 1):
-                if ox or oy:
-                    draw.text((cx + ox, ly + oy), line, font=font, fill=(25, 25, 25), anchor="mm")
+        if outline > 0:
+            for ox in range(-outline, outline + 1):
+                for oy in range(-outline, outline + 1):
+                    if ox or oy:
+                        draw.text((cx + ox, ly + oy), line, font=font, fill=(25, 25, 25), anchor="mm")
         draw.text((cx, ly), line, font=font, fill=color_rgb, anchor="mm")
 
     frame[:] = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)

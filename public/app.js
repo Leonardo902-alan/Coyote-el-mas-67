@@ -16,41 +16,81 @@ const animStatus = document.getElementById("animStatus");
 const VIDEO_W = 1280;
 const VIDEO_H = 720;
 const IS_VERCEL = location.hostname.includes("vercel.app");
+const SIGN_FONT = '"Roboto Condensed", "Arial Narrow", sans-serif';
+
+const ANIMATIONS_FALLBACK = [
+  { id: 1, file: "coyote1.mp4", label: "Animación 1", totalFrames: 48, fps: 24, textStartFrame: 22, textStartTime: 0.917,
+    textBox: { x: 464, y: 413, w: 352, h: 108, centerX: 640, centerY: 467 } },
+  { id: 2, file: "coyote2.mp4", label: "Animación 2", totalFrames: 77, fps: 24, textStartFrame: 34, textStartTime: 1.417,
+    textBox: { x: 464, y: 415, w: 352, h: 108, centerX: 640, centerY: 469 } },
+  { id: 3, file: "coyote3.mp4", label: "Animación 3", totalFrames: 68, fps: 24, textStartFrame: 32, textStartTime: 1.333,
+    textBox: { x: 464, y: 415, w: 352, h: 108, centerX: 640, centerY: 469 } },
+  { id: 4, file: "coyote4.mp4", label: "Animación 4", totalFrames: 47, fps: 24, textStartFrame: 31, textStartTime: 1.292,
+    textBox: { x: 464, y: 415, w: 352, h: 108, centerX: 640, centerY: 469 } },
+];
 
 let animations = [];
 let currentAnim = null;
 let videoReady = false;
-let bangersLoaded = false;
+let signFontLoaded = false;
 let ffmpegInstance = null;
 
-async function loadBangersFont() {
+function signFontCss(size) {
+  return `italic 700 ${size}px ${SIGN_FONT}`;
+}
+
+async function loadSignFont() {
   try {
-    const font = new FontFace("Bangers", "url(/fonts/Bangers-Regular.ttf)");
+    const font = new FontFace(
+      "Roboto Condensed",
+      "url(fonts/RobotoCondensed-BoldItalic.ttf)",
+      { weight: "700", style: "italic" }
+    );
     await font.load();
     document.fonts.add(font);
-    bangersLoaded = true;
+    signFontLoaded = true;
   } catch {
-    bangersLoaded = false;
+    try {
+      await document.fonts.load(signFontCss(48));
+      signFontLoaded = document.fonts.check(signFontCss(16));
+    } catch {
+      signFontLoaded = false;
+    }
   }
 }
 
+async function loadAnimations() {
+  try {
+    const res = await fetch(`data/animations.json?t=${Date.now()}`);
+    if (res.ok) return res.json();
+  } catch {}
+  return ANIMATIONS_FALLBACK;
+}
+
 async function init() {
-  await loadBangersFont();
-  const res = await fetch("/data/animations.json?t=" + Date.now());
-  animations = await res.json();
+  try {
+    await loadSignFont();
+    animations = await loadAnimations();
 
-  animations.forEach((anim) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "anim-tab";
-    btn.innerHTML = `<span class="tab-num">${anim.id}</span>${anim.label.replace("Animación ", "")}`;
-    btn.dataset.id = anim.id;
-    btn.addEventListener("click", () => selectAnim(anim.id));
-    animTabs.appendChild(btn);
-  });
+    animations.forEach((anim) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "anim-tab";
+      btn.innerHTML = `<span class="tab-num">${anim.id}</span>${anim.label.replace("Animación ", "")}`;
+      btn.dataset.id = anim.id;
+      btn.addEventListener("click", () => selectAnim(anim.id));
+      animTabs.appendChild(btn);
+    });
 
-  selectAnim(1);
-  requestAnimationFrame(renderLoop);
+    selectAnim(1);
+    requestAnimationFrame(renderLoop);
+  } catch (err) {
+    if (animStatus) {
+      animStatus.textContent = "Error al cargar la app. Recarga la página.";
+      animStatus.className = "export-status error";
+    }
+    console.error(err);
+  }
 }
 
 function selectAnim(id) {
@@ -63,7 +103,7 @@ function selectAnim(id) {
 
   videoReady = false;
   video.pause();
-  video.src = `/video/${currentAnim.file}?v=${Date.now()}`;
+  video.src = `video/${currentAnim.file}?v=${Date.now()}`;
   video.load();
   playBtn.textContent = "▶ Reproducir";
   updateAnimStatus();
@@ -155,13 +195,12 @@ function paintSignText(targetCtx, { scale, offsetX, offsetY, showText }) {
   const cy = offsetY + box.centerY * scale;
 
   let fontSize = Math.max(14, parseInt(fontSizeInput.value, 10) * scale);
-  const fontFamily = bangersLoaded ? "Bangers" : "cursive";
 
   let lines, lineHeight, totalH, widest;
   do {
-    targetCtx.font = `${fontSize}px "${fontFamily}", cursive`;
+    targetCtx.font = signFontCss(fontSize);
     lines = wrapLines(targetCtx, text, w * 0.92);
-    lineHeight = fontSize * 1.12;
+    lineHeight = fontSize * 1.1;
     totalH = lines.length * lineHeight;
     widest = Math.max(...lines.map((l) => targetCtx.measureText(l).width));
     if (widest <= w * 0.92 && totalH <= h * 0.88) break;
@@ -172,17 +211,13 @@ function paintSignText(targetCtx, { scale, offsetX, offsetY, showText }) {
   targetCtx.beginPath();
   targetCtx.rect(x, y, w, h);
   targetCtx.clip();
-  targetCtx.font = `${fontSize}px "${fontFamily}", cursive`;
+  targetCtx.font = signFontCss(fontSize);
   targetCtx.fillStyle = textColorSelect.value;
   targetCtx.textAlign = "center";
   targetCtx.textBaseline = "middle";
-  targetCtx.strokeStyle = "rgba(0,0,0,0.12)";
-  targetCtx.lineWidth = Math.max(1, fontSize * 0.04);
-  targetCtx.lineJoin = "round";
 
   let startY = cy - totalH / 2 + lineHeight / 2;
   for (const line of lines) {
-    targetCtx.strokeText(line, cx, startY);
     targetCtx.fillText(line, cx, startY);
     startY += lineHeight;
   }
@@ -462,6 +497,13 @@ function exportClip(format) {
 video.addEventListener("loadeddata", () => {
   videoReady = true;
   drawSignText();
+});
+
+video.addEventListener("error", () => {
+  if (animStatus) {
+    animStatus.textContent = "No se pudo cargar el video. Recarga la página.";
+    animStatus.className = "export-status error";
+  }
 });
 
 video.addEventListener("timeupdate", drawSignText);

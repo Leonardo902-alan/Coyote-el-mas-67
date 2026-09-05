@@ -37,9 +37,11 @@ header {
 }
 
 header h1 {
-  font-family: "Bangers", cursive;
-  font-size: 3rem;
-  letter-spacing: 2px;
+  font-family: "Roboto Condensed", "Arial Narrow", sans-serif;
+  font-size: 2.75rem;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 1px;
   color: #fbbf24;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
@@ -107,7 +109,8 @@ main {
 
 .tab-num {
   font-size: 1.1rem;
-  font-family: "Bangers", cursive;
+  font-family: "Roboto Condensed", sans-serif;
+  font-weight: 700;
   color: #fbbf24;
 }
 
