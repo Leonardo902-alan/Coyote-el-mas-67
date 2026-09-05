@@ -145,7 +145,14 @@ async function fetchVoiceAudio(text) {
   const res = await fetch(`/api/tts?${params}`);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || "No se pudo generar la voz");
+    let msg = err.error || "No se pudo generar la voz";
+    if (typeof msg === "string" && msg.startsWith("{")) {
+      try {
+        const parsed = JSON.parse(msg);
+        msg = parsed.message || msg;
+      } catch {}
+    }
+    throw new Error(msg);
   }
   return res.blob();
 }

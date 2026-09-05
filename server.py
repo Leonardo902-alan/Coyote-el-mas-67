@@ -77,7 +77,10 @@ def _fish_tts(text: str, reference_id: str = "") -> bytes:
             if exc.code == 401:
                 last_error = "API Key inválida. Usa una de fish.audio/app/api-keys."
             elif exc.code == 402:
-                last_error = "Sin créditos en Fish Audio."
+                last_error = (
+                    "Sin créditos de API en Fish. Entra a fish.audio/app/developers "
+                    "y recarga (es distinto al crédito de la web)."
+                )
             else:
                 last_error = body[:200] or f"Fish Audio error {exc.code}"
             if exc.code in (401, 402):

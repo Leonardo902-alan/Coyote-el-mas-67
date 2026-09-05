@@ -21,7 +21,9 @@ function parseFishError(status, body) {
     if (status === 401) {
       return "API Key inválida. Crea una en fish.audio/app/api-keys (no uses el ID del modelo).";
     }
-    if (status === 402) return "Sin créditos en Fish Audio. Recarga en fish.audio.";
+    if (status === 402) {
+      return "Sin créditos de API en Fish. Entra a fish.audio/app/developers y recarga (es distinto al crédito de la web).";
+    }
     if (status === 400) return data.message || "ID de voz inválido en Fish Audio.";
     return data.message || `Fish Audio error ${status}`;
   } catch {
