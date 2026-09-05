@@ -67,16 +67,14 @@
           </label>
           <label for="voiceSelect">Estilo de voz</label>
           <select id="voiceSelect">
+            <option value="9441e8efd51b4cffb9b35fcb32d91ae6" selected>Narrador Looney Tunes</option>
             <option value="">Voz Fish por defecto</option>
             <option value="9a9cf47702da476aa4629e2506d4a857">Hombre energético</option>
             <option value="ca3007f96ae7499ab87d27ea3599956a">Voz femenina</option>
           </select>
-          <label for="customVoiceId">Tu voz de Fish (ID del modelo)</label>
-          <input type="text" id="customVoiceId" placeholder="Ej: abc123def456..." autocomplete="off">
-          <small>
-            En fish.audio abre la voz → menú ⋮ → <strong>Copiar Id de modelo</strong> → pégalo aquí.
-            Si lo pegas en el chat, yo lo dejo fijo en la app.
-          </small>
+          <label for="customVoiceId">Otra voz (ID opcional)</label>
+          <input type="text" id="customVoiceId" placeholder="Solo si quieres cambiar la voz" autocomplete="off">
+          <small>La voz del narrador suena al aparecer el cartel y se incluye en el MP4.</small>
         </div>
 
         <div class="export-block">
@@ -89,6 +87,6 @@
     </main>
   </div>
 
-  <script type="module" src="app.js?v=5"></script>
+  <script type="module" src="app.js?v=6"></script>
 </body>
 </html>

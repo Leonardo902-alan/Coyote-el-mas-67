@@ -23,6 +23,7 @@ const VIDEO_H = 720;
 const IS_VERCEL = location.hostname.includes("vercel.app");
 const ASSET_BASE = new URL("./", import.meta.url).href;
 const SIGN_FONT = '"Roboto Condensed", "Arial Narrow", sans-serif';
+const DEFAULT_FISH_VOICE_ID = "9441e8efd51b4cffb9b35fcb32d91ae6";
 
 const ANIMATIONS_FALLBACK = [
   { id: 1, file: "coyote1.mp4", label: "Animación 1", totalFrames: 48, fps: 24, textStartFrame: 22, textStartTime: 0.917,
@@ -132,7 +133,9 @@ function getTextStartTime() {
 function getSelectedVoiceId() {
   const custom = customVoiceId?.value.trim();
   if (custom) return custom;
-  return voiceSelect?.value.trim() || "";
+  const selected = voiceSelect?.value.trim();
+  if (selected) return selected;
+  return DEFAULT_FISH_VOICE_ID;
 }
 
 async function fetchVoiceAudio(text) {
