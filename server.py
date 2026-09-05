@@ -27,7 +27,7 @@ def _load_env_file():
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, value = line.split("=", 1)
-        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+        os.environ[key.strip()] = value.strip().strip('"').strip("'")
 
 
 _load_env_file()
@@ -47,7 +47,12 @@ def _fish_tts(text: str, reference_id: str = "") -> bytes:
         body["reference_id"] = reference_id
 
     last_error = "Fish Audio no disponible"
-    for model in ("s2-pro", "s2.1-pro-free"):
+    preferred = os.environ.get("FISH_AUDIO_MODEL", "s2-pro")
+    models = [preferred]
+    if preferred != "s2.1-pro-free":
+        models.append("s2.1-pro-free")
+
+    for model in models:
         req = urllib.request.Request(
             "https://api.fish.audio/v1/tts",
             data=json.dumps(body).encode("utf-8"),
@@ -147,5 +152,10 @@ if __name__ == "__main__":
         calibrate()
 
     print("\n  Cartel del Coyote")
+    if os.environ.get("FISH_AUDIO_API_KEY"):
+        model = os.environ.get("FISH_AUDIO_MODEL", "s2-pro")
+        print(f"  Voz IA: Fish Audio ({model})")
+    else:
+        print("  Voz IA: sin token (crea .env con FISH_AUDIO_API_KEY)")
     print("  Abre: http://127.0.0.1:5000\n")
     app.run(host="127.0.0.1", port=5000, debug=False)

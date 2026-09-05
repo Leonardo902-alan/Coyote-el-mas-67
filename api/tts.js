@@ -1,6 +1,11 @@
 const googleTTS = require("google-tts-api");
 
-const FISH_MODELS = ["s2-pro", "s2.1-pro-free"];
+function getFishModels() {
+  const preferred = process.env.FISH_AUDIO_MODEL || "s2-pro";
+  const models = [preferred];
+  if (preferred !== "s2.1-pro-free") models.push("s2.1-pro-free");
+  return models;
+}
 
 async function fishTts(text, referenceId, apiKey) {
   const body = {
@@ -12,7 +17,7 @@ async function fishTts(text, referenceId, apiKey) {
 
   let lastError = "Fish Audio no disponible";
 
-  for (const model of FISH_MODELS) {
+  for (const model of getFishModels()) {
     const response = await fetch("https://api.fish.audio/v1/tts", {
       method: "POST",
       headers: {
@@ -63,12 +68,7 @@ module.exports = async (req, res) => {
     let buffer;
 
     if (apiKey) {
-      try {
-        buffer = await fishTts(text, referenceId, apiKey);
-      } catch (fishErr) {
-        console.error("Fish Audio:", fishErr.message);
-        buffer = await googleTtsFallback(text);
-      }
+      buffer = await fishTts(text, referenceId, apiKey);
     } else {
       buffer = await googleTtsFallback(text);
     }

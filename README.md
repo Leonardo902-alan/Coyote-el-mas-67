@@ -41,9 +41,28 @@ Para una voz concreta de Fish Studio, copia su **ID** en fish.audio y pégalo en
 ## Uso local
 
 1. `pip install -r requirements-local.txt` (solo la primera vez)
-2. Doble clic en **`iniciar.bat`** o ejecuta `python server.py`
-3. Abre **http://127.0.0.1:5000**
-4. Elige animación, escribe tu texto y descarga MP4/GIF
+2. El archivo **`.env`** ya trae tu token de Fish Audio (no se sube a GitHub)
+3. Doble clic en **`iniciar.bat`** o ejecuta `python server.py`
+4. Abre **http://127.0.0.1:5000**
+5. Activa **Voz IA (Fish Audio)**, elige voz y descarga MP4/GIF
+
+Si falta `.env`, copia `.env.example` y pon tu token:
+
+```
+FISH_AUDIO_API_KEY=tu_token
+FISH_AUDIO_MODEL=s2-pro
+```
+
+### Vercel (mismo token, plan Pro)
+
+Ejecuta **`configurar-vercel.bat`** para ver los pasos, o en Vercel añade:
+
+| Variable | Valor |
+|----------|--------|
+| `FISH_AUDIO_API_KEY` | tu token de fish.audio |
+| `FISH_AUDIO_MODEL` | `s2-pro` |
+
+Luego **Redeploy**.
 
 ## Las 4 animaciones
 
