@@ -12,9 +12,6 @@ const exportGifBtn = document.getElementById("exportGifBtn");
 const exportStatus = document.getElementById("exportStatus");
 const timeDisplay = document.getElementById("timeDisplay");
 const animStatus = document.getElementById("animStatus");
-const voiceEnabledInput = document.getElementById("voiceEnabled");
-const voiceSelect = document.getElementById("voiceSelect");
-const customVoiceId = document.getElementById("customVoiceId");
 
 let previewAudio = null;
 
@@ -23,7 +20,6 @@ const VIDEO_H = 720;
 const IS_VERCEL = location.hostname.includes("vercel.app");
 const ASSET_BASE = new URL("./", import.meta.url).href;
 const SIGN_FONT = '"Roboto Condensed", "Arial Narrow", sans-serif';
-const DEFAULT_FISH_VOICE_ID = "9441e8efd51b4cffb9b35fcb32d91ae6";
 
 const ANIMATIONS_FALLBACK = [
   { id: 1, file: "coyote1.mp4", label: "Animación 1", totalFrames: 48, fps: 24, textStartFrame: 22, textStartTime: 0.917,
@@ -97,9 +93,6 @@ async function init() {
 
     selectAnim(1);
     requestAnimationFrame(renderLoop);
-
-    const savedVoice = localStorage.getItem("coyote_fish_voice_id");
-    if (savedVoice && customVoiceId) customVoiceId.value = savedVoice;
   } catch (err) {
     if (animStatus) {
       animStatus.textContent = "Error al cargar la app. Recarga la página.";
@@ -118,6 +111,7 @@ function selectAnim(id) {
   });
 
   videoReady = false;
+  video.crossOrigin = "anonymous";
   video.pause();
   video.src = asset(`video/${currentAnim.file}`) + "?v=" + Date.now();
   video.load();
@@ -130,75 +124,39 @@ function getTextStartTime() {
   return currentAnim.textStartTime ?? currentAnim.textStartFrame / getFps();
 }
 
-function getSelectedVoiceId() {
-  const custom = customVoiceId?.value.trim();
-  if (custom) return custom;
-  const selected = voiceSelect?.value.trim();
-  if (selected) return selected;
-  return DEFAULT_FISH_VOICE_ID;
-}
-
 async function fetchVoiceAudio(text) {
-  const params = new URLSearchParams({ text });
-  const voiceId = getSelectedVoiceId();
-  if (voiceId) params.set("voice", voiceId);
-  const res = await fetch(`/api/tts?${params}`);
+  const res = await fetch(`/api/tts?text=${encodeURIComponent(text)}`);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    let msg = err.error || "No se pudo generar la voz";
-    if (typeof msg === "string" && msg.startsWith("{")) {
-      try {
-        const parsed = JSON.parse(msg);
-        msg = parsed.message || msg;
-      } catch {}
-    }
-    throw new Error(msg);
+    throw new Error(err.error || "No se pudo generar la voz");
   }
   return res.blob();
 }
 
 async function speakPreview(text) {
-  if (!voiceEnabledInput?.checked || !text) return;
+  if (!text) return;
 
   if (previewAudio) {
     previewAudio.pause();
     previewAudio = null;
   }
-  window.speechSynthesis?.cancel();
 
   try {
     const blob = await fetchVoiceAudio(text);
     const url = URL.createObjectURL(blob);
     previewAudio = new Audio(url);
+    previewAudio.playbackRate = 1.08;
     previewAudio.onended = () => URL.revokeObjectURL(url);
     await previewAudio.play();
-    if (animStatus) {
-      animStatus.textContent = "Voz Fish Audio OK";
-      animStatus.className = "export-status success";
-    }
-  } catch (err) {
-    if (animStatus) {
-      animStatus.textContent = err.message;
-      animStatus.className = "export-status error";
-    }
-  }
-}
-
-async function testFishVoice() {
-  const text = signTextInput.value.trim() || "Eso es todo amigos";
-  exportStatus.textContent = "Probando voz Fish Audio...";
-  exportStatus.className = "export-status";
-  try {
-    const blob = await fetchVoiceAudio(text);
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    audio.onended = () => URL.revokeObjectURL(url);
-    await audio.play();
-    exportStatus.textContent = "Voz Fish Audio funcionando.";
-    exportStatus.className = "export-status success";
-  } catch (err) {
-    exportStatus.textContent = err.message;
-    exportStatus.className = "export-status error";
+  } catch {
+    const voices = window.speechSynthesis?.getVoices().filter((v) => v.lang.startsWith("es")) || [];
+    const voice = voices.find((v) => /google/i.test(v.name)) || voices[0];
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "es-ES";
+    utterance.rate = 1.12;
+    utterance.pitch = 1.05;
+    if (voice) utterance.voice = voice;
+    window.speechSynthesis?.speak(utterance);
   }
 }
 
@@ -207,7 +165,7 @@ function getFps() {
 }
 
 function maybeSpeakOnTextShow() {
-  if (!videoReady || !voiceEnabledInput?.checked) return;
+  if (!videoReady) return;
   const text = signTextInput.value.trim();
   if (!text || spokeThisLoop) return;
 
@@ -380,12 +338,17 @@ function togglePlay() {
 }
 
 function seekVideo(target, time) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     if (Math.abs(target.currentTime - time) < 0.001) {
       resolve();
       return;
     }
+    const timer = setTimeout(() => {
+      target.removeEventListener("seeked", onSeeked);
+      reject(new Error("Tiempo de espera agotado al leer el video"));
+    }, 8000);
     const onSeeked = () => {
+      clearTimeout(timer);
       target.removeEventListener("seeked", onSeeked);
       resolve();
     };
@@ -397,13 +360,15 @@ function seekVideo(target, time) {
 async function getFfmpeg() {
   if (ffmpegInstance) return ffmpegInstance;
 
-  const { FFmpeg } = await import("https://esm.sh/@ffmpeg/ffmpeg@0.12.10");
-  const { toBlobURL } = await import("https://esm.sh/@ffmpeg/util@0.12.1");
+  const { FFmpeg } = await import("https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/+esm");
+  const { toBlobURL } = await import("https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/+esm");
 
   const ffmpeg = new FFmpeg();
   const baseURL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.12.6/dist/umd";
 
-  ffmpeg.on("log", () => {});
+  ffmpeg.on("log", ({ message }) => {
+    if (/error|invalid|failed/i.test(message)) console.warn("[ffmpeg]", message);
+  });
 
   await ffmpeg.load({
     coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
@@ -415,9 +380,13 @@ async function getFfmpeg() {
 }
 
 async function renderExportFrames(onProgress) {
+  await document.fonts.ready;
+  if (!signFontLoaded) await loadSignFont();
+
   const fps = getFps();
   const totalFrames = currentAnim.totalFrames;
   const exportVideo = document.createElement("video");
+  exportVideo.crossOrigin = "anonymous";
   exportVideo.src = video.src;
   exportVideo.muted = true;
   exportVideo.playsInline = true;
@@ -425,7 +394,7 @@ async function renderExportFrames(onProgress) {
 
   await new Promise((resolve, reject) => {
     exportVideo.addEventListener("loadeddata", resolve, { once: true });
-    exportVideo.addEventListener("error", reject, { once: true });
+    exportVideo.addEventListener("error", () => reject(new Error("No se pudo cargar el video para exportar")), { once: true });
     exportVideo.load();
   });
 
@@ -445,7 +414,8 @@ async function renderExportFrames(onProgress) {
       showText: i >= currentAnim.textStartFrame,
     });
 
-    const blob = await new Promise((resolve) => offCanvas.toBlob(resolve, "image/jpeg", 0.9));
+    const blob = await new Promise((resolve) => offCanvas.toBlob(resolve, "image/jpeg", 0.92));
+    if (!blob) throw new Error("No se pudo capturar un frame del video");
     blobs.push(blob);
     onProgress(Math.round(((i + 1) / totalFrames) * 70));
   }
@@ -454,8 +424,33 @@ async function renderExportFrames(onProgress) {
   return { blobs, fps };
 }
 
-async function encodeWithFfmpeg(blobs, fps, format, onProgress, voiceBlob = null) {
-  const { fetchFile } = await import("https://esm.sh/@ffmpeg/util@0.12.1");
+async function encodeGifFromFrames(blobs, fps) {
+  const { GIFEncoder, quantize, applyPalette } = await import("https://cdn.jsdelivr.net/npm/gifenc@1.0.3/+esm");
+  const gif = GIFEncoder();
+  const delay = Math.max(20, Math.round(1000 / fps));
+  let palette = null;
+
+  for (const blob of blobs) {
+    const bitmap = await createImageBitmap(blob);
+    const canvas = document.createElement("canvas");
+    canvas.width = 640;
+    canvas.height = 360;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(bitmap, 0, 0, 640, 360);
+    bitmap.close();
+
+    const { data, width, height } = ctx.getImageData(0, 0, 640, 360);
+    if (!palette) palette = quantize(data, 256);
+    const index = applyPalette(data, palette);
+    gif.writeFrame(index, width, height, { palette, delay });
+  }
+
+  gif.finish();
+  return new Blob([gif.bytes()], { type: "image/gif" });
+}
+
+async function encodeMp4WithFfmpeg(blobs, fps, onProgress, voiceBlob = null) {
+  const { fetchFile } = await import("https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/+esm");
   const ffmpeg = await getFfmpeg();
 
   for (let i = 0; i < blobs.length; i++) {
@@ -465,53 +460,49 @@ async function encodeWithFfmpeg(blobs, fps, format, onProgress, voiceBlob = null
 
   onProgress(85);
 
-  if (format === "mp4") {
-    if (voiceBlob) {
-      const delayMs = Math.round(getTextStartTime() * 1000);
-      await ffmpeg.writeFile("voice.mp3", await fetchFile(voiceBlob));
-      await ffmpeg.exec([
-        "-framerate", String(fps),
-        "-i", "frame%04d.jpg",
-        "-i", "voice.mp3",
-        "-filter_complex", `[1:a]adelay=${delayMs}|${delayMs}[a]`,
-        "-map", "0:v",
-        "-map", "[a]",
-        "-c:v", "libx264",
-        "-c:a", "aac",
-        "-b:a", "128k",
-        "-pix_fmt", "yuv420p",
-        "-profile:v", "baseline",
-        "-movflags", "+faststart",
-        "-shortest",
-        "out.mp4",
-      ]);
-    } else {
-      await ffmpeg.exec([
-        "-framerate", String(fps),
-        "-i", "frame%04d.jpg",
-        "-c:v", "libx264",
-        "-pix_fmt", "yuv420p",
-        "-profile:v", "baseline",
-        "-movflags", "+faststart",
-        "-an",
-        "out.mp4",
-      ]);
-    }
-    onProgress(95);
-    const data = await ffmpeg.readFile("out.mp4");
-    return new Blob([data.buffer], { type: "video/mp4" });
+  const frameInput = ["-start_number", "0", "-framerate", String(fps), "-i", "frame%04d.jpg"];
+
+  if (voiceBlob) {
+    const delaySec = getTextStartTime().toFixed(3);
+    await ffmpeg.writeFile("voice.mp3", await fetchFile(voiceBlob));
+    await ffmpeg.exec([
+      ...frameInput,
+      "-itsoffset", delaySec,
+      "-i", "voice.mp3",
+      "-map", "0:v",
+      "-map", "1:a",
+      "-c:v", "libx264",
+      "-c:a", "aac",
+      "-b:a", "128k",
+      "-pix_fmt", "yuv420p",
+      "-profile:v", "baseline",
+      "-movflags", "+faststart",
+      "-shortest",
+      "out.mp4",
+    ]);
+    await ffmpeg.deleteFile("voice.mp3").catch(() => {});
+  } else {
+    await ffmpeg.exec([
+      ...frameInput,
+      "-c:v", "libx264",
+      "-pix_fmt", "yuv420p",
+      "-profile:v", "baseline",
+      "-movflags", "+faststart",
+      "-an",
+      "out.mp4",
+    ]);
   }
 
-  await ffmpeg.exec([
-    "-framerate", String(fps),
-    "-i", "frame%04d.jpg",
-    "-vf", "scale=640:360",
-    "-y",
-    "out.gif",
-  ]);
   onProgress(95);
-  const data = await ffmpeg.readFile("out.gif");
-  return new Blob([data.buffer], { type: "image/gif" });
+  const data = await ffmpeg.readFile("out.mp4");
+  const blob = new Blob([data], { type: "video/mp4" });
+
+  for (let i = 0; i < blobs.length; i++) {
+    await ffmpeg.deleteFile(`frame${String(i).padStart(4, "0")}.jpg`).catch(() => {});
+  }
+  await ffmpeg.deleteFile("out.mp4").catch(() => {});
+
+  return blob;
 }
 
 async function exportClipClient(format) {
@@ -541,13 +532,20 @@ async function exportClipClient(format) {
     setProgress(75);
 
     let voiceBlob = null;
-    if (voiceEnabledInput?.checked && format === "mp4") {
-      exportStatus.textContent = "Generando voz en español...";
-      voiceBlob = await fetchVoiceAudio(text);
+    if (format === "mp4") {
+      exportStatus.textContent = "Generando voz...";
+      try {
+        voiceBlob = await fetchVoiceAudio(text);
+      } catch {
+        voiceBlob = null;
+      }
     }
 
     exportStatus.textContent = "Codificando video...";
-    const blob = await encodeWithFfmpeg(blobs, fps, format, setProgress, voiceBlob);
+    const blob =
+      format === "gif"
+        ? await encodeGifFromFrames(blobs, fps)
+        : await encodeMp4WithFfmpeg(blobs, fps, setProgress, voiceBlob);
 
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -651,18 +649,17 @@ playBtn.addEventListener("click", togglePlay);
 restartBtn.addEventListener("click", () => {
   if (!videoReady) return;
   spokeThisLoop = false;
-  window.speechSynthesis?.cancel();
   if (previewAudio) {
     previewAudio.pause();
     previewAudio = null;
   }
+  window.speechSynthesis?.cancel();
   video.currentTime = 0;
   video.play();
   playBtn.textContent = "⏸ Pausar";
 });
 exportMp4Btn.addEventListener("click", () => exportClip("mp4"));
 exportGifBtn.addEventListener("click", () => exportClip("gif"));
-document.getElementById("testVoiceBtn")?.addEventListener("click", testFishVoice);
 signTextInput.addEventListener("input", drawSignText);
 textColorSelect.addEventListener("change", drawSignText);
 fontSizeInput.addEventListener("input", () => {
@@ -670,11 +667,5 @@ fontSizeInput.addEventListener("input", () => {
   drawSignText();
 });
 window.addEventListener("resize", drawSignText);
-
-customVoiceId?.addEventListener("input", () => {
-  const id = customVoiceId.value.trim();
-  if (id) localStorage.setItem("coyote_fish_voice_id", id);
-  else localStorage.removeItem("coyote_fish_voice_id");
-});
 
 init();

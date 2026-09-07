@@ -23,46 +23,18 @@ Pon texto personalizado en el cartel del Coyote. Cada animación es un clip cort
 
 > **Si sigue fallando el build:** en Vercel → **Settings** → **General** → **Framework Preset** → elige **Other** → guarda y haz **Redeploy**.
 
-Solo se despliega la carpeta `public/` (sitio estático). La exportación corre en el navegador del usuario.
+Solo se despliega la carpeta `public/` más la API `/api/tts` (voz en español). La exportación de video corre en el navegador del usuario.
 
-### Voz IA con Fish Audio (gratis con tu token)
+### Voz automática
 
-1. En Vercel → tu proyecto → **Settings** → **Environment Variables**
-2. Añade:
-   - **Name:** `FISH_AUDIO_API_KEY`
-   - **Value:** tu token de [fish.audio](https://fish.audio)
-3. Guarda y haz **Redeploy**
-4. En la app activa **Voz IA (Fish Audio)** y elige un estilo de voz
-
-Para una voz concreta de Fish Studio, copia su **ID** en fish.audio y pégalo en *ID de voz personalizada*.
-
-**Local:** copia `.env.example` a `.env` y pon tu token ahí (nunca lo subas a GitHub).
+Cuando el cartel se queda quieto, el texto se lee en voz alta con la voz en español de Google (energética, sin configuración). Al exportar **MP4**, la voz se mezcla en el video.
 
 ## Uso local
 
 1. `pip install -r requirements-local.txt` (solo la primera vez)
-2. El archivo **`.env`** ya trae tu token de Fish Audio (no se sube a GitHub)
-3. Doble clic en **`iniciar.bat`** o ejecuta `python server.py`
-4. Abre **http://127.0.0.1:5000**
-5. Activa **Voz IA (Fish Audio)**, elige voz y descarga MP4/GIF
-
-Si falta `.env`, copia `.env.example` y pon tu token:
-
-```
-FISH_AUDIO_API_KEY=tu_token
-FISH_AUDIO_MODEL=s2-pro
-```
-
-### Vercel (mismo token, plan Pro)
-
-Ejecuta **`configurar-vercel.bat`** para ver los pasos, o en Vercel añade:
-
-| Variable | Valor |
-|----------|--------|
-| `FISH_AUDIO_API_KEY` | tu token de fish.audio |
-| `FISH_AUDIO_MODEL` | `s2-pro` |
-
-Luego **Redeploy**.
+2. Doble clic en **`iniciar.bat`** o ejecuta `python server.py`
+3. Abre **http://127.0.0.1:5000**
+4. Escribe tu texto y descarga MP4 o GIF
 
 ## Las 4 animaciones
 

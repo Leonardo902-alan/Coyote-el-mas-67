@@ -36,9 +36,18 @@ def load_config(anim_id: int) -> dict:
 
 
 def load_font(size: int):
-    if not FONT_PATH.exists():
-        raise FileNotFoundError(f"No se encontró la fuente en {FONT_PATH}")
-    return ImageFont.truetype(str(FONT_PATH), size)
+    candidates = [
+        FONT_PATH,
+        PUBLIC_DIR / "fonts" / "Bangers-Regular.ttf",
+    ]
+    for path in candidates:
+        if not path.exists():
+            continue
+        try:
+            return ImageFont.truetype(str(path), size)
+        except OSError:
+            continue
+    raise FileNotFoundError(f"No se encontró una fuente válida en {PUBLIC_DIR / 'fonts'}")
 
 
 def hex_to_rgb(hex_color: str) -> tuple[int, int, int]:

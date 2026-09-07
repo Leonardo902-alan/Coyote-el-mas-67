@@ -1,9 +1,7 @@
 """Servidor local para la app del Cartel del Coyote."""
 
-import json
-import os
 import sys
-import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -18,85 +16,22 @@ from scripts.export_video import export_gif, export_mp4  # noqa: E402
 app = Flask(__name__)
 
 
-def _load_env_file():
-    env_path = ROOT / ".env"
-    if not env_path.exists():
-        return
-    for line in env_path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        os.environ[key.strip()] = value.strip().strip('"').strip("'")
-
-
-_load_env_file()
-
-
-def _fish_tts(text: str, reference_id: str = "") -> bytes:
-    api_key = os.environ.get("FISH_AUDIO_API_KEY") or os.environ.get("FISH_API_KEY") or ""
-    if not api_key:
-        raise RuntimeError(
-            "Falta FISH_AUDIO_API_KEY en .env. Créala en fish.audio/app/api-keys "
-            "(no uses el ID del modelo)."
-        )
-
-    if not reference_id:
-        reference_id = os.environ.get("FISH_AUDIO_VOICE_ID", "")
-
-    body = {
-        "text": text,
-        "format": "mp3",
-        "prosody": {"speed": 1, "volume": 0, "normalize_loudness": True},
-    }
-    if reference_id:
-        body["reference_id"] = reference_id
-
-    last_error = "Fish Audio no disponible"
-    preferred = os.environ.get("FISH_AUDIO_MODEL", "s2-pro")
-    models = [preferred]
-    if preferred != "s2.1-pro-free":
-        models.append("s2.1-pro-free")
-
-    for model in models:
-        req = urllib.request.Request(
-            "https://api.fish.audio/v1/tts",
-            data=json.dumps(body).encode("utf-8"),
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-                "model": model,
-            },
-            method="POST",
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                return resp.read()
-        except urllib.error.HTTPError as exc:
-            body = exc.read().decode("utf-8", errors="replace")
-            if exc.code == 401:
-                last_error = "API Key inválida. Usa una de fish.audio/app/api-keys."
-            elif exc.code == 402:
-                last_error = (
-                    "Sin créditos de API en Fish. Entra a fish.audio/app/developers "
-                    "y recarga (es distinto al crédito de la web)."
-                )
-            else:
-                last_error = body[:200] or f"Fish Audio error {exc.code}"
-            if exc.code in (401, 402):
-                break
-    raise RuntimeError(last_error)
+def _google_tts(text: str) -> bytes:
+    query = urllib.parse.urlencode({"ie": "UTF-8", "tl": "es", "client": "tw-ob", "q": text})
+    url = f"https://translate.google.com/translate_tts?{query}"
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return resp.read()
 
 
 @app.route("/api/tts")
 def api_tts():
     text = (request.args.get("text") or "").strip()[:200]
-    voice = (request.args.get("voice") or os.environ.get("FISH_AUDIO_VOICE_ID", "")).strip()
     if not text:
         return jsonify({"error": "Falta el texto"}), 400
 
     try:
-        audio = _fish_tts(text, voice)
+        audio = _google_tts(text)
         return send_file(
             __import__("io").BytesIO(audio),
             mimetype="audio/mpeg",
@@ -167,11 +102,5 @@ if __name__ == "__main__":
         calibrate()
 
     print("\n  Cartel del Coyote")
-    if os.environ.get("FISH_AUDIO_API_KEY") or os.environ.get("FISH_API_KEY"):
-        model = os.environ.get("FISH_AUDIO_MODEL", "s2-pro")
-        voice = os.environ.get("FISH_AUDIO_VOICE_ID", "sin voz")
-        print(f"  Voz IA: Fish Audio ({model}) · voz {voice[:8]}...")
-    else:
-        print("  Voz IA: FALTA API Key en .env (fish.audio/app/api-keys)")
     print("  Abre: http://127.0.0.1:5000\n")
     app.run(host="127.0.0.1", port=5000, debug=False)

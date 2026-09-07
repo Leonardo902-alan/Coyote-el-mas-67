@@ -24,7 +24,7 @@
         <p class="anim-status" id="animStatus"></p>
 
         <div class="video-wrapper">
-          <video id="video" playsinline loop muted></video>
+          <video id="video" playsinline loop muted crossorigin="anonymous"></video>
           <canvas id="overlay"></canvas>
         </div>
 
@@ -60,27 +60,6 @@
           </div>
         </div>
 
-        <div class="control-group voice-group">
-          <label class="voice-toggle">
-            <input type="checkbox" id="voiceEnabled">
-            <span>Voz IA (Fish Audio)</span>
-          </label>
-          <label for="voiceSelect">Estilo de voz</label>
-          <select id="voiceSelect">
-            <option value="9441e8efd51b4cffb9b35fcb32d91ae6" selected>Narrador Looney Tunes</option>
-            <option value="">Voz Fish por defecto</option>
-            <option value="9a9cf47702da476aa4629e2506d4a857">Hombre energético</option>
-            <option value="ca3007f96ae7499ab87d27ea3599956a">Voz femenina</option>
-          </select>
-          <label for="customVoiceId">Otra voz (ID opcional)</label>
-          <input type="text" id="customVoiceId" placeholder="Solo si quieres cambiar la voz" autocomplete="off">
-          <small>
-            Necesitas <strong>2 cosas</strong> en Fish: API Key (fish.audio/app/api-keys) + ID del modelo.
-            La voz suena al aparecer el cartel y en el MP4.
-          </small>
-          <button type="button" id="testVoiceBtn" class="btn btn-voice-test">Probar voz Fish</button>
-        </div>
-
         <div class="export-block">
           <h3>Exportar resultado</h3>
           <button type="button" id="exportMp4Btn" class="btn btn-export">Descargar MP4</button>
@@ -91,6 +70,6 @@
     </main>
   </div>
 
-  <script type="module" src="app.js?v=8"></script>
+  <script type="module" src="app.js?v=10"></script>
 </body>
 </html>
